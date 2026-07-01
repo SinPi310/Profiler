@@ -2,7 +2,7 @@ import os
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from dotenv import load_dotenv
-from spotify_utilities import album_download as download, open_csv_file as open, save_to_csv as save, rate_tracks as rate
+from spotify_utilities import menu
 
 
 
@@ -20,16 +20,7 @@ def main():
         auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
         sp = spotipy.Spotify(auth_manager=auth_manager)
 
-        link = input("Pass your spotify album link: ").strip()
-
-        album_data = sp.album(link)
-        album_name = album_data['name']
-
-        row_album_data = download(sp, link)
-
-        rated_album = rate(row_album_data, album_name)
-
-        path = save(rated_album, album_name)
+        menu(sp)
 
         # open(r"D:\WSEI 2 year\SEM4\Python\Profiler\DB\samurai champloo music record departure.csv")
 
