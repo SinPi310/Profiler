@@ -1,5 +1,3 @@
-import os
-
 import spotipy
 
 from analysis import analyze_ratings
@@ -12,6 +10,39 @@ from spotify_service import add_album_by_link
 from spotify_service import album_download
 from spotify_service import get_artist_albums
 
+def menu(sp: spotipy.Spotify) -> None:
+    while True:
+        print("\n+---------------------------------------+")
+        print("|         Spotify Album rater           |")
+        print("+---------------------------------------+")
+        print("| 1. Add album                          |")
+        print("| 2. Rerate album                       |")
+        print("| 3. Analyze ratings                    |")
+        print("| 4. Open CSV file                      |")
+        print("| 5. Exit                               |")
+        print("+---------------------------------------+")
+
+        choice = input("Enter your choice (1-5): ")
+
+        if choice == '1':
+            add_album_menu(sp)
+        elif choice == '2':
+            rerate_album_menu()
+        elif choice == '3':
+            analyze_ratings_menu()
+        elif choice == '4':
+            open_csv_menu()
+        elif choice == '5':
+            print("Exiting the program...")
+            return
+        else:
+            print("Invalid choice. Please try again.")
+            continue
+
+        back_to_menu = input("\nBack to main menu? (y/n): ").strip().lower()
+        if back_to_menu != "y":
+            print("Exiting the program...")
+            return
 
 def choose_artist() -> str | None:
     artists = load_artists()
@@ -20,23 +51,24 @@ def choose_artist() -> str | None:
         print("No artists found.")
         return None
 
-    print("\nChoose artist:")
-    for index, artist in enumerate(artists, start=1):
-        print(f"{index}. {artist['artist_name']}")
+    while True:
+        print("\nChoose artist:")
+        for index, artist in enumerate(artists, start=1):
+            print(f"{index}. {artist['artist_name']}")
 
-    selected_artist = input("\nChoose artist number: ").strip()
+        selected_artist = input("\nChoose artist number: ").strip()
 
-    try:
-        artist_index = int(selected_artist) - 1
-    except ValueError:
-        print("Invalid artist number.")
-        return None
+        try:
+            artist_index = int(selected_artist) - 1
+        except ValueError:
+            print("Invalid artist number.")
+            continue
 
-    if artist_index < 0 or artist_index >= len(artists):
-        print("Artist number out of range.")
-        return None
+        if artist_index < 0 or artist_index >= len(artists):
+            print("Artist number out of range.")
+            continue
 
-    return artists[artist_index]["artist_name"]
+        return artists[artist_index]["artist_name"]
 
 
 def choose_downloaded_album(artist_name: str, action_label: str) -> dict | None:
@@ -46,23 +78,24 @@ def choose_downloaded_album(artist_name: str, action_label: str) -> dict | None:
         print("No downloaded albums found for this artist.")
         return None
 
-    print(f"\nChoose album to {action_label}:")
-    for index, album in enumerate(albums, start=1):
-        print(f"{index}. {album['album_name']}")
+    while True:
+        print(f"\nChoose album to {action_label}:")
+        for index, album in enumerate(albums, start=1):
+            print(f"{index}. {album['album_name']}")
 
-    selected_album = input("\nChoose album number: ").strip()
+        selected_album = input("\nChoose album number: ").strip()
 
-    try:
-        album_index = int(selected_album) - 1
-    except ValueError:
-        print("Invalid album number.")
-        return None
+        try:
+            album_index = int(selected_album) - 1
+        except ValueError:
+            print("Invalid album number.")
+            continue
 
-    if album_index < 0 or album_index >= len(albums):
-        print("Album number out of range.")
-        return None
+        if album_index < 0 or album_index >= len(albums):
+            print("Album number out of range.")
+            continue
 
-    return albums[album_index]
+        return albums[album_index]
 
 
 def add_album_menu(sp: spotipy.Spotify) -> None:
@@ -147,47 +180,15 @@ def analyze_ratings_menu() -> None:
     analyze_ratings(selected_album_data["file_path"])
 
 
-def menu(sp: spotipy.Spotify) -> None:
-    print("\n+---------------------------------------+")
-    print("|         Spotify Album rater           |")
-    print("+---------------------------------------+")
-    print("| 1. Add album                          |")
-    print("| 2. Rerate album                       |")
-    print("| 3. Analyze ratings                    |")
-    print("| 4. Open CSV file                      |")
-    print("| 5. Exit                               |")
-    print("+---------------------------------------+")
+def open_csv_menu() -> None:
+    artist_name = choose_artist()
 
-    choice = input("Enter your choice (1-5): ")
-
-    if choice == '1':
-        add_album_menu(sp)
-
-    elif choice == '2':
-        rerate_album_menu()
-
-    elif choice == '3':
-        analyze_ratings_menu()
-
-    elif choice == '4':
-        print("\nAvailable CSV files in the 'DB' directory:")
-
-        files = [f for f in os.listdir("DB") if f.endswith(".csv")]
-
-        for file in files:
-            print(f"    {file}")
-
-        filed_name = input("\nEnter the name of the CSV file to open (without .csv): ").strip()
-        filed_path = os.path.join("DB", f"{filed_name}.csv")
-
-        if os.path.exists(filed_path):
-            open_csv_file(filed_path)
-        else:
-            print("File not found.")
-
-    elif choice == '5':
-        print("Exiting the program...")
+    if not artist_name:
         return
 
-    else:
-        print("Invalid choice. Please try again.")
+    selected_album_data = choose_downloaded_album(artist_name, "open")
+
+    if not selected_album_data:
+        return
+
+    open_csv_file(selected_album_data["file_path"])
