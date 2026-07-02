@@ -1,6 +1,11 @@
 # Profiler
 Muzyczny profiler do badania playlist na Spotify.
 
+## Instalacja
+```bash
+python -m pip install -r requirements.txt
+```
+
 
 # Konfigutacja API
  - Stworzenie aplikacji na stronie [spotify/dashboard](https://developer.spotify.com/dashboard)  
