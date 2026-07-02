@@ -6,15 +6,46 @@ import pandas as pd
 from analysis import format_ms
 
 
-def save_to_csv(tracks_list: list, album_name: str) -> str:
-    os.makedirs("DB", exist_ok=True)
-    album_name_formate = "".join([c for c in album_name if c.isalnum() or c in " _-"]).rstrip()
-    path = os.path.join("DB", f"{album_name_formate}.csv")
+def normalize_file_name(name: str) -> str:
+    return "".join([c for c in name if c.isalnum() or c in " _-"]).rstrip()
+
+
+def save_to_csv(tracks_list: list, album_name: str, artist_name: str) -> str:
+    artist_name_formate = normalize_file_name(artist_name)
+    album_name_formate = normalize_file_name(album_name)
+
+    album_directory = os.path.join("db", "albums", artist_name_formate)
+    os.makedirs(album_directory, exist_ok=True)
+
+    path = os.path.join(album_directory, f"{album_name_formate}.csv")
 
     df = pd.DataFrame(tracks_list)
     df.to_csv(path, index=False, encoding="utf-8-sig")
 
     return path
+
+
+def get_artist_album_list_path(artist_name: str) -> str:
+    artist_name_formate = normalize_file_name(artist_name)
+    os.makedirs(os.path.join("db", "artists_albums"), exist_ok=True)
+    return os.path.join("db", "artists_albums", f"{artist_name_formate}_album_list.csv")
+
+
+def save_artist_album_list(albums_list: list, artist_name: str) -> str:
+    path = get_artist_album_list_path(artist_name)
+    df = pd.DataFrame(albums_list)
+    df.to_csv(path, index=False, encoding="utf-8-sig")
+    return path
+
+
+def load_artist_album_list(artist_name: str) -> list:
+    path = get_artist_album_list_path(artist_name)
+
+    if not os.path.exists(path):
+        return []
+
+    df = pd.read_csv(path)
+    return df.to_dict(orient="records")
 
 
 def open_csv_file(file_path: str) -> list:

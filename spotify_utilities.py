@@ -4,6 +4,9 @@ import spotipy
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
+from csv_utilities import load_artist_album_list
+from csv_utilities import normalize_file_name
+from csv_utilities import save_artist_album_list
 
 def album_download(sp: spotipy.Spotify, album_url: str) -> list:
     print("+---------------------------------------+")
@@ -35,10 +38,12 @@ def album_download(sp: spotipy.Spotify, album_url: str) -> list:
     print("+---------------------------------------+")
     return tracks_list
 
-def save_to_csv(tracks_list: list, album_name: str) -> str:
-    os.makedirs("DB", exist_ok=True)
-    album_name_formate = "".join([c for c in album_name if c.isalnum() or c in " _-"]).rstrip()
-    path = os.path.join("DB", f"{album_name_formate}.csv")
+def save_to_csv(tracks_list: list, album_name: str, artist_name: str) -> str:
+    artist_name_formate = normalize_file_name(artist_name)
+    album_name_formate = normalize_file_name(album_name)
+    album_directory = os.path.join("db", "albums", artist_name_formate)
+    os.makedirs(album_directory, exist_ok=True)
+    path = os.path.join(album_directory, f"{album_name_formate}.csv")
 
     df = pd.DataFrame(tracks_list)
     df.to_csv(path, index=False, encoding='utf-8-sig')
@@ -103,18 +108,91 @@ def add_album_by_link(sp: spotipy.Spotify) -> None:
     try:
         album_data = sp.album(link)
         album_name = album_data['name']
+        artist_name = album_data['artists'][0]['name']
 
         row_album_data = album_download(sp, link)
         rated_album = rate_tracks(row_album_data, album_name)
-        path = save_to_csv(rated_album, album_name)
+        path = save_to_csv(rated_album, album_name, artist_name)
+        ensure_artist_album_list(sp, artist_name)
 
         print(f"Thanks for rating! Your data has been saved to {path}")
 
     except Exception as e:
         print(f"An error occurred: {e}")
 
-def search_artist_and_albums(sp: spotipy.Spotify) -> None:
-    print("TODO.")
+def ensure_artist_album_list(sp: spotipy.Spotify, artist_name: str) -> list:
+    albums_list = load_artist_album_list(artist_name)
+
+    if albums_list:
+        return albums_list
+
+    return get_artist_albums(sp, artist_name)
+
+def get_artist_albums(sp: spotipy.Spotify, artist_name: str) -> list:
+    albums_list = load_artist_album_list(artist_name)
+
+    if albums_list:
+        return albums_list
+    else:
+        try:
+            search_result = sp.search(q=f"artist:{artist_name}", type="artist", limit=1)
+            artists = search_result["artists"]["items"]
+
+            if not artists:
+                return []
+
+            artist = artists[0]
+            results = sp._get(
+                f"artists/{artist['id']}/albums",
+                include_groups="album",
+            )
+            albums = results["items"]
+
+            while results["next"]:
+                results = sp.next(results)
+                albums.extend(results["items"])
+
+            seen_album_names = set()
+            albums_list = []
+
+            for album in albums:
+                album_name = album["name"]
+
+                if album_name in seen_album_names:
+                    continue
+
+                seen_album_names.add(album_name)
+                albums_list.append(
+                    {
+                        "artist_name": artist["name"],
+                        "album_name": album_name,
+                        "album_url": album["external_urls"]["spotify"],
+                        "total_tracks": album["total_tracks"],
+                        "release_date": album["release_date"],
+                    }
+                )
+
+            save_artist_album_list(albums_list, artist["name"])
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return []
+
+    return albums_list
+
+def download_and_rate_selected_album(sp: spotipy.Spotify, album_data: dict) -> str | None:
+    album_name = album_data["album_name"]
+    album_url = album_data["album_url"]
+    artist_name = album_data["artist_name"]
+
+    try:
+        row_album_data = album_download(sp, album_url)
+        rated_album = rate_tracks(row_album_data, album_name)
+        path = save_to_csv(rated_album, album_name, artist_name)
+        return path
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
 def add_album_menu(sp: spotipy.Spotify) -> None:
     print("\nAdd album:")

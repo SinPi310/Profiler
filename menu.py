@@ -6,7 +6,8 @@ import spotipy
 from analysis import analyze_ratings
 from csv_utilities import open_csv_file
 from spotify_utilities import add_album_by_link
-from spotify_utilities import search_artist_and_albums
+from spotify_utilities import download_and_rate_selected_album
+from spotify_utilities import get_artist_albums
 
 
 def add_album_menu(sp: spotipy.Spotify) -> None:
@@ -19,7 +20,39 @@ def add_album_menu(sp: spotipy.Spotify) -> None:
     if add_choice == '1':
         add_album_by_link(sp)
     elif add_choice == '2':
-        search_artist_and_albums(sp)
+        artist_name = input("Pass artist name: ").strip()
+
+        if not artist_name:
+            print("Artist name cannot be empty.")
+            return
+
+        albums_list = get_artist_albums(sp, artist_name)
+
+        if not albums_list:
+            print("No albums found.")
+            return
+
+        print("\nAlbums:")
+        for index, album in enumerate(albums_list, start=1):
+            print(f"{index}. {album['album_name']} [{album['release_date']}] ({album['total_tracks']} tracks)")
+
+        selected_album = input("\nChoose album number: ").strip()
+
+        try:
+            selected_index = int(selected_album) - 1
+        except ValueError:
+            print("Invalid album number.")
+            return
+
+        if selected_index < 0 or selected_index >= len(albums_list):
+            print("Album number out of range.")
+            return
+
+        selected_album_data = albums_list[selected_index]
+        path = download_and_rate_selected_album(sp, selected_album_data)
+
+        if path:
+            print(f"Thanks for rating! Your data has been saved to {path}")
     else:
         print("Invalid choice. Please try again.")
 
