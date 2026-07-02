@@ -52,9 +52,21 @@ def open_csv_file(file_path: str) -> list:
         file_name = os.path.splitext(os.path.basename(file_path))[0]
         print(f"\n{file_name}")
 
+        print(f"{'Nr':<3} | {'Tytuł Utworu':<30} | {'Artysta':<25} | {'Czas':<5} | {'Ocena':<6} | {'Data oceny'}")
+        print("-" * 95)
+
         for track in reader:
-            special = "*" if track['superstar'] else ""
-            print(f"{track['track_number']}. {track['title']} [{track['artist']}]   {track['rate']}{special}")
+            special = "*" if track['superstar'] == 'True' else " "
+
+            tytul = track['title'][:27] + "..." if len(track['title']) > 30 else track['title']
+            artysta = track['artist'][:22] + "..." if len(track['artist']) > 25 else track['artist']
+
+            czas = format_ms(int(track['duration_ms']))
+            ocena = f"{track['rate']}{special}"
+            
+            print(f"{track['track_number']:<3} | {tytul:<30} | {artysta:<25} | {czas:<5} | {ocena:<6} | {track['rate_date']}")
+
+        print("-" * 95)
 
 def rate_tracks(track_list: list, album_name: str) -> list:
     print("\nHi, \npleace type rate, between 1 and 10, after the track name. \nPS. You can also type [ * ] for super ultra grate tracks")
@@ -90,13 +102,14 @@ def menu(sp):
     print("|         Spotify Album rater           |")
     print("+---------------------------------------+")
     print("| 1. Download album and rate            |")
-    print("| 2. Open CSV file                      |")
-    print("| 3. Analyze ratings                    |")
+    print("| 2. Analyze ratings                    |")
+    print("| 3. Open CSV file                      |")
     print("| 4. Exit                               |")
     print("+---------------------------------------+")
 
     choice = input("Enter your choice (1-4): ")
 
+    # ================ Choice 1 =====================
     if choice == '1':
         link = input("Pass your spotify album link: ").strip()
 
@@ -113,14 +126,54 @@ def menu(sp):
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    # Opcja 2, 3 i 4 do dokończenia
+
+    # ================ Choice 2 =====================
+    # Doczytać z tym sortowanie jak to wygląda
     elif choice == '2':
+        print("\nWhich one to analyze?")
+
+        files = [f for f in os.listdir("DB") if f.endswith('.csv')]
+        
+        albums_with_dates = []
+
+        for file in files:
+            file_path = os.path.join("DB", file)
+            try:
+                df_temp = pd.read_csv(file_path)
+                
+                if 'rate_date' in df_temp.columns and not df_temp['rate_date'].isnull().all():
+                    rate_date = str(df_temp['rate_date'].dropna().iloc[0])
+                else:
+                    rate_date = "Brak daty"
+            except Exception:
+                rate_date = "Brak daty"
+                
+            albums_with_dates.append({"file": file, "date": rate_date})
+
+        albums_with_dates.sort(key=lambda x: x["date"] if x["date"] != "Brak daty" else "0000-00-00", reverse=True)
+
+        for item in albums_with_dates:
+            clean_name = item['file'].replace('.csv', '')
+            print(f"    [{item['date']}] {clean_name}")
+
+        filed_name = input("\nEnter the name of the CSV file to analyze (without .csv): ").strip()
+        
+        filed_path = os.path.join("DB", f"{filed_name}.csv")
+        
+        if os.path.exists(filed_path):
+            analyze_ratings(filed_path)
+        else:
+            print(f"❌ File not found: {filed_path}")
+
+
+    # ================ Choice 3 =====================
+    elif choice == '3':
         print("\nAvailable CSV files in the 'DB' directory:")
 
         files = [f for f in os.listdir("DB") if f.endswith('.csv')]
 
         for file in files:
-            print(f" - {file}")
+            print(f"    {file}")
 
         filed_name = input("\nEnter the name of the CSV file to open (without .csv): ").strip()
         filed_path = os.path.join("DB", f"{filed_name}.csv")
@@ -130,20 +183,10 @@ def menu(sp):
         else:
             print("File not found.")
 
-    elif choice == '3':
-        print("\nWith one to analyze?")
 
-        files = [f for f in os.listdir("DB") if f.endswith('.csv')]
-
-        for file in files:
-            print(f" - {file}")
-
-        filed_name = input("\nEnter the name of the CSV file to analyze (without .csv): ").strip()
-        filed_path = os.path.join("DB", f"{filed_name}.csv")
-        analyze_ratings(filed_path)
-
+    # ================ Choice 4 =====================
     elif choice == '4':
-        print("Exiting the program.")
+        print("Exiting the program...")
         return
     
     else:
@@ -158,84 +201,70 @@ def analyze_ratings(file_path: str) -> None:
     
     df['duration_s'] = df['duration_ms'].apply(format_ms)
 
+    average_grade = df['rate'].mean()
     album_name = os.path.splitext(os.path.basename(file_path))[0]
 
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(14, 9))
-    fig.suptitle(album_name.upper(), fontsize=18, fontweight='bold')
+    fig.suptitle(f"{album_name.upper()} ({average_grade:.2f}/10)", fontsize=18, fontweight='bold')
 
-    superstar_colour = ['gold' if str(star) == 'True' else 'mediumpurple' for star in df['superstar']]
-
-    # ================ ax[0, 1] =====================
-    # Zliczamy, ile razy padła jaka ocena
+    # ================ Wykres 1 =====================
+    # ================ ax[0, 0] =====================
     skrocone_tytuly = [tytul[:20] + '...' if len(tytul) > 20 else tytul for tytul in df['title']]
 
-    oceny_zliczone = df['rate'].value_counts().sort_index()
-    
-    # Rysujemy pionowe słupki (podobnie jak w zadaniu na uczelni)
-    ax[0, 0].bar(skrocone_tytuly, df['rate'], color=superstar_colour, edgecolor='black')
-    ax[0, 0].set_title("Oceny poszczególnych utworów z albumu")
-    ax[0, 0].set_ylabel("Twoja Ocena (1-10)")
-    ax[0, 0].set_ylim(0, 11) # Dajemy trochę miejsca na górze (skala 0-11)
+    superstar_colour_all = ['gold' if str(star) == 'True' else 'mediumpurple' for star in df['superstar']]
+
+    ax[0, 0].set_title("All tracks")
+    ax[0, 0].bar(skrocone_tytuly, df['rate'], color=superstar_colour_all, edgecolor='black')
+    ax[0, 0].set_ylabel("Rate")
+    ax[0, 0].set_ylim(0, 11)
     ax[0, 0].tick_params(axis='x', rotation=90, labelsize=9)
     # ===============================================
 
 
+    # ================ Wykres 2 =====================
     # ================ ax[0, 1] =====================
-    # Sortujemy malejąco po ocenie i bierzemy 5 pierwszych (najlepszych)
     top5 = df.sort_values(by='rate', ascending=False).head(5).sort_values(by='rate', ascending=True)
 
-    superstar_colour = ['gold' if str(star) == 'True' else 'mediumpurple' for star in df['superstar']]
-    ax[0, 1].barh(y=top5['title'], width=top5['rate'], color=superstar_colour, edgecolor='black')
+    superstar_colour_top5 = ['gold' if str(star) == 'True' else 'mediumpurple' for star in top5['superstar']]
+
+    ax[0, 1].barh(y=top5['title'], width=top5['rate'], color=superstar_colour_top5, edgecolor='black')
     ax[0, 1].set_title("Top 5")
     ax[0, 1].set_xlim(0, 11)
     
-    # Podpisy z wartością na końcach słupków (znane z wykres_slupkowy!)
     for i, (ocena, star) in enumerate(zip(top5['rate'], top5['superstar'])):
         special = "*" if str(star) == 'True' else ""
         ax[0, 1].text(ocena + 0.2, i, f"{ocena}{special}", va='center', fontweight='bold')
     # ===============================================
 
 
+    # ================ Wykres 3 =====================
     # ================ ax[1, 0] =====================
-    # Wykres punktowy sprawdzający, czy wolisz długie czy krótkie utwory
-    ax[1, 0].axis('off') # Wyłączamy osie (x i y), żeby narysować tabelę
-    ax[1, 0].set_title("Lista utworów", pad=10, fontweight='bold')
-    
-    # Funkcja pomocnicza do formatowania czasu z ms na minuty:sekundy
-    def format_duration(ms):
-        minutes = int((ms / (1000 * 60)) % 60)
-        seconds = int((ms / 1000) % 60)
-        return f"{minutes:02d}:{seconds:02d}"
+    ax[1, 0].axis('off')
 
-    # Przygotowanie danych do tabeli (skracamy długie teksty)
     table_data = []
     for _, row in df.iterrows():
-        tytul = row['title'][:22] + '...' if len(row['title']) > 22 else row['title']
-        artysta = str(row['artist'])[:20] + '...' if len(str(row['artist'])) > 20 else str(row['artist'])
-        czas = format_duration(row['duration_ms'])
-        table_data.append([row['track_number'], tytul, artysta, czas])
-    
-    # Rysowanie tabeli
-    tabela = ax[1, 0].table(cellText=table_data, loc='right', cellLoc='right')
-    
-    # Stylizacja tabeli (odpowiednia wielkość czcionki, by zmieściły się dłuższe albumy)
+        table_data.append([row['title'], str(row['artist']), format_ms(row['duration_ms'])])
+
+    szerokosci_kolumn = [0.45, 0.40, 0.15]
+
+    tabela = ax[1, 0].table(cellText=table_data, colWidths=szerokosci_kolumn, loc='center', cellLoc='left')
+
     tabela.auto_set_font_size(False)
-    
-    # Dynamiczne dopasowanie czcionki: mniejsza, jeśli piosenek jest dużo (np. powyżej 12)
-    font_size = 9 if len(df) <= 12 else 7 
+    font_size = 9 if len(df) <= 15 else 7
     tabela.set_fontsize(font_size)
-    tabela.scale(1, 1.3) # Lekko rozciągamy wiersze, by nie były zbytnio ściśnięte
+    tabela.scale(1, 1.4)
     # ===============================================
 
 
+    # ================ Wykres 4 =====================
     # ================ ax[1, 1] =====================
     superstar_counts = df['superstar'].astype(str).value_counts()
 
-    superstar_colour = ['gold' if str(star) == 'True' else 'mediumpurple' for star in df['superstar']]
-    etykiety = ["Superstar (Hity)" if val == 'True' else "Standardowe" for val in superstar_counts.index]
+    superstar_colour_pie = ['gold' if val == 'True' else 'mediumpurple' for val in superstar_counts.index]
+    etykiety = ["Superstars" if val == 'True' else "Casual" for val in superstar_counts.index]
     
-    ax[1, 1].pie(superstar_counts.values, labels=etykiety, autopct='%1.1f%%', startangle=90, colors=superstar_colour)
-    ax[1, 1].set_title("Ile procent albumu to super hity?")
+    ax[1, 1].pie(superstar_counts.values, labels=etykiety, autopct='%1.1f%%', startangle=90, colors=superstar_colour_pie, radius=1.2, textprops={'fontsize': 11})
+    ax[1, 1].set_title("Amount of superstar tracks in the album")
     # ===============================================
 
     plt.tight_layout()
