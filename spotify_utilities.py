@@ -97,11 +97,44 @@ def rate_tracks(track_list: list, album_name: str) -> list:
 
     return track_list
 
+def add_album_by_link(sp: spotipy.Spotify) -> None:
+    link = input("Pass your spotify album link: ").strip()
+
+    try:
+        album_data = sp.album(link)
+        album_name = album_data['name']
+
+        row_album_data = album_download(sp, link)
+        rated_album = rate_tracks(row_album_data, album_name)
+        path = save_to_csv(rated_album, album_name)
+
+        print(f"Thanks for rating! Your data has been saved to {path}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def search_artist_and_albums(sp: spotipy.Spotify) -> None:
+    print("TODO.")
+
+def add_album_menu(sp: spotipy.Spotify) -> None:
+    print("\nAdd album:")
+    print("1. Add by album link")
+    print("2. Search artist and albums")
+
+    add_choice = input("Enter your choice (1-2): ").strip()
+
+    if add_choice == '1':
+        add_album_by_link(sp)
+    elif add_choice == '2':
+        search_artist_and_albums(sp)
+    else:
+        print("Invalid choice. Please try again.")
+
 def menu(sp):
     print("\n+---------------------------------------+")
     print("|         Spotify Album rater           |")
     print("+---------------------------------------+")
-    print("| 1. Download album and rate            |")
+    print("| 1. Add album                          |")
     print("| 2. Analyze ratings                    |")
     print("| 3. Open CSV file                      |")
     print("| 4. Exit                               |")
@@ -111,20 +144,7 @@ def menu(sp):
 
     # ================ Choice 1 =====================
     if choice == '1':
-        link = input("Pass your spotify album link: ").strip()
-
-        try:
-            album_data = sp.album(link)
-            album_name = album_data['name']
-
-            row_album_data = album_download(sp, link)
-            rated_album = rate_tracks(row_album_data, album_name)
-            path = save_to_csv(rated_album, album_name)
-
-            print(f"Thanks for rating! Your data has been saved to {path}")
-
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        add_album_menu(sp)
 
 
     # ================ Choice 2 =====================
