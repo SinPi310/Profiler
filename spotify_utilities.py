@@ -4,6 +4,7 @@ import spotipy
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
+from csv_utilities import album_csv_exists
 from csv_utilities import load_artist_album_list
 from csv_utilities import normalize_file_name
 from csv_utilities import save_artist_album_list
@@ -102,6 +103,14 @@ def rate_tracks(track_list: list, album_name: str) -> list:
 
     return track_list
 
+def should_continue_with_existing_album(album_name: str, artist_name: str) -> bool:
+    if not album_csv_exists(album_name, artist_name):
+        return True
+
+    print(f"Album '{album_name}' by '{artist_name}' is already downloaded and rated.")
+    user_choice = input("Do you want to rate it again? (y/n): ").strip().lower()
+    return user_choice == "y"
+
 def add_album_by_link(sp: spotipy.Spotify) -> None:
     link = input("Pass your spotify album link: ").strip()
 
@@ -109,6 +118,10 @@ def add_album_by_link(sp: spotipy.Spotify) -> None:
         album_data = sp.album(link)
         album_name = album_data['name']
         artist_name = album_data['artists'][0]['name']
+
+        if not should_continue_with_existing_album(album_name, artist_name):
+            print("Skipping album.")
+            return
 
         row_album_data = album_download(sp, link)
         rated_album = rate_tracks(row_album_data, album_name)
@@ -186,6 +199,10 @@ def download_and_rate_selected_album(sp: spotipy.Spotify, album_data: dict) -> s
     artist_name = album_data["artist_name"]
 
     try:
+        if not should_continue_with_existing_album(album_name, artist_name):
+            print("Skipping album.")
+            return None
+
         row_album_data = album_download(sp, album_url)
         rated_album = rate_tracks(row_album_data, album_name)
         path = save_to_csv(rated_album, album_name, artist_name)

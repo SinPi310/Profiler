@@ -10,14 +10,23 @@ def normalize_file_name(name: str) -> str:
     return "".join([c for c in name if c.isalnum() or c in " _-"]).rstrip()
 
 
-def save_to_csv(tracks_list: list, album_name: str, artist_name: str) -> str:
+def get_album_csv_path(album_name: str, artist_name: str) -> str:
     artist_name_formate = normalize_file_name(artist_name)
     album_name_formate = normalize_file_name(album_name)
 
     album_directory = os.path.join("db", "albums", artist_name_formate)
     os.makedirs(album_directory, exist_ok=True)
 
-    path = os.path.join(album_directory, f"{album_name_formate}.csv")
+    return os.path.join(album_directory, f"{album_name_formate}.csv")
+
+
+def album_csv_exists(album_name: str, artist_name: str) -> bool:
+    path = get_album_csv_path(album_name, artist_name)
+    return os.path.exists(path)
+
+
+def save_to_csv(tracks_list: list, album_name: str, artist_name: str) -> str:
+    path = get_album_csv_path(album_name, artist_name)
 
     df = pd.DataFrame(tracks_list)
     df.to_csv(path, index=False, encoding="utf-8-sig")
