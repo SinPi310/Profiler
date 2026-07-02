@@ -4,9 +4,13 @@ import pandas as pd
 import spotipy
 
 from analysis import analyze_ratings
+from csv_utilities import list_downloaded_albums_for_artist
+from csv_utilities import load_artists
 from csv_utilities import open_csv_file
+from db_service import download_and_rate_selected_album
+from db_service import rerate_album_from_file
 from spotify_service import add_album_by_link
-from spotify_service import download_and_rate_selected_album
+from spotify_service import album_download
 from spotify_service import get_artist_albums
 
 
@@ -49,7 +53,7 @@ def add_album_menu(sp: spotipy.Spotify) -> None:
             return
 
         selected_album_data = albums_list[selected_index]
-        path = download_and_rate_selected_album(sp, selected_album_data)
+        path = download_and_rate_selected_album(sp, selected_album_data, album_download)
 
         if path:
             print(f"Thanks for rating! Your data has been saved to {path}")
@@ -62,17 +66,74 @@ def menu(sp: spotipy.Spotify) -> None:
     print("|         Spotify Album rater           |")
     print("+---------------------------------------+")
     print("| 1. Add album                          |")
-    print("| 2. Analyze ratings                    |")
-    print("| 3. Open CSV file                      |")
-    print("| 4. Exit                               |")
+    print("| 2. Rerate album                       |")
+    print("| 3. Analyze ratings                    |")
+    print("| 4. Open CSV file                      |")
+    print("| 5. Exit                               |")
     print("+---------------------------------------+")
 
-    choice = input("Enter your choice (1-4): ")
+    choice = input("Enter your choice (1-5): ")
 
     if choice == '1':
         add_album_menu(sp)
 
     elif choice == '2':
+        artists = load_artists()
+
+        if not artists:
+            print("No artists found.")
+            return
+
+        print("\nChoose artist:")
+        for index, artist in enumerate(artists, start=1):
+            print(f"{index}. {artist['artist_name']}")
+
+        selected_artist = input("\nChoose artist number: ").strip()
+
+        try:
+            artist_index = int(selected_artist) - 1
+        except ValueError:
+            print("Invalid artist number.")
+            return
+
+        if artist_index < 0 or artist_index >= len(artists):
+            print("Artist number out of range.")
+            return
+
+        artist_name = artists[artist_index]["artist_name"]
+        albums = list_downloaded_albums_for_artist(artist_name)
+
+        if not albums:
+            print("No downloaded albums found for this artist.")
+            return
+
+        print("\nChoose album to rerate:")
+        for index, album in enumerate(albums, start=1):
+            print(f"{index}. {album['album_name']}")
+
+        selected_album = input("\nChoose album number: ").strip()
+
+        try:
+            album_index = int(selected_album) - 1
+        except ValueError:
+            print("Invalid album number.")
+            return
+
+        if album_index < 0 or album_index >= len(albums):
+            print("Album number out of range.")
+            return
+
+        selected_album_data = albums[album_index]
+        path = rerate_album_from_file(
+            selected_album_data["file_path"],
+            artist_name,
+            selected_album_data["album_name"],
+        )
+
+        if path:
+            print(f"Album rerated and saved to {path}")
+
+    elif choice == '3':
         print("\nWhich one to analyze?")
 
         files = [f for f in os.listdir("DB") if f.endswith(".csv")]
@@ -109,7 +170,7 @@ def menu(sp: spotipy.Spotify) -> None:
         else:
             print(f"âŒ File not found: {filed_path}")
 
-    elif choice == '3':
+    elif choice == '4':
         print("\nAvailable CSV files in the 'DB' directory:")
 
         files = [f for f in os.listdir("DB") if f.endswith(".csv")]
@@ -125,7 +186,7 @@ def menu(sp: spotipy.Spotify) -> None:
         else:
             print("File not found.")
 
-    elif choice == '4':
+    elif choice == '5':
         print("Exiting the program...")
         return
 

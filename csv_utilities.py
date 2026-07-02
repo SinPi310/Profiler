@@ -88,6 +88,53 @@ def load_artist_album_list(artist_name: str) -> list:
     return df.to_dict(orient="records")
 
 
+def load_artists() -> list:
+    path = get_artists_csv_path()
+
+    if not os.path.exists(path):
+        return []
+
+    df = pd.read_csv(path)
+    return df.to_dict(orient="records")
+
+
+def list_downloaded_albums_for_artist(artist_name: str) -> list:
+    artist_name_formate = normalize_file_name(artist_name)
+    artist_directory = os.path.join("db", "albums", artist_name_formate)
+
+    if not os.path.exists(artist_directory):
+        return []
+
+    albums = []
+    for file_name in os.listdir(artist_directory):
+        if file_name.endswith(".csv"):
+            albums.append(
+                {
+                    "album_name": os.path.splitext(file_name)[0],
+                    "file_path": os.path.join(artist_directory, file_name),
+                }
+            )
+
+    albums.sort(key=lambda album: album["album_name"].lower())
+    return albums
+
+
+def load_album_tracks_from_csv(file_path: str) -> list:
+    with open(file_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        tracks = []
+
+        for row in reader:
+            row["track_number"] = int(row["track_number"])
+            row["disc_number"] = int(row["disc_number"])
+            row["duration_ms"] = int(row["duration_ms"])
+            row["rate"] = int(row["rate"])
+            row["superstar"] = str(row["superstar"]) == "True"
+            tracks.append(row)
+
+        return tracks
+
+
 def open_csv_file(file_path: str) -> list:
     with open(file_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)

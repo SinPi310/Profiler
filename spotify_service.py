@@ -1,12 +1,11 @@
-from datetime import datetime
-
 import spotipy
 
-from csv_utilities import album_csv_exists
 from csv_utilities import load_artist_album_list
 from csv_utilities import save_artist_if_missing
 from csv_utilities import save_artist_album_list
 from csv_utilities import save_to_csv
+from db_service import should_continue_with_existing_album
+from rating import rate_tracks
 
 
 def album_download(sp: spotipy.Spotify, album_url: str) -> list:
@@ -38,44 +37,6 @@ def album_download(sp: spotipy.Spotify, album_url: str) -> list:
     print(f"|         Downloaded {len(tracks_list)} tracks!         |")
     print("+---------------------------------------+")
     return tracks_list
-
-
-def rate_tracks(track_list: list, album_name: str) -> list:
-    print("\nHi, \npleace type rate, between 1 and 10, after the track name. \nPS. You can also type [ * ] for super ultra grate tracks")
-    print("")
-    print(album_name.upper())
-
-    for track in track_list:
-        while True:
-            user_rate = input(f" {track['track_number']}. {track['title']} [{track['artist']}] -> rate: ").strip()
-
-            is_superstar = "*" in user_rate
-            user_rate_number = user_rate.replace("*", "")
-
-            try:
-                user_rate_int = int(user_rate_number)
-
-                if 1 <= user_rate_int <= 10:
-                    track["rate"] = user_rate_int
-                    track["superstar"] = is_superstar
-                    track["rate_date"] = datetime.now().strftime("%Y-%m-%d")
-                    break
-
-                print("Rate must be between 1 and 10!!!")
-
-            except ValueError:
-                print("Invalid user input!!!")
-
-    return track_list
-
-
-def should_continue_with_existing_album(album_name: str, artist_name: str) -> bool:
-    if not album_csv_exists(album_name, artist_name):
-        return True
-
-    print(f"Album '{album_name}' by '{artist_name}' is already downloaded and rated.")
-    user_choice = input("Do you want to rate it again? (y/n): ").strip().lower()
-    return user_choice == "y"
 
 
 def ensure_artist_album_list(sp: spotipy.Spotify, artist_name: str) -> list:
@@ -170,22 +131,3 @@ def get_artist_albums(sp: spotipy.Spotify, artist_name: str) -> list:
     except Exception as e:
         print(f"An error occurred: {e}")
         return []
-
-
-def download_and_rate_selected_album(sp: spotipy.Spotify, album_data: dict) -> str | None:
-    album_name = album_data["album_name"]
-    album_url = album_data["album_url"]
-    artist_name = album_data["artist_name"]
-
-    try:
-        if not should_continue_with_existing_album(album_name, artist_name):
-            print("Skipping album.")
-            return None
-
-        row_album_data = album_download(sp, album_url)
-        rated_album = rate_tracks(row_album_data, album_name)
-        path = save_to_csv(rated_album, album_name, artist_name)
-        return path
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
