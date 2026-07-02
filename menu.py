@@ -5,9 +5,9 @@ import spotipy
 
 from analysis import analyze_ratings
 from csv_utilities import open_csv_file
-from spotify_utilities import add_album_by_link
-from spotify_utilities import download_and_rate_selected_album
-from spotify_utilities import get_artist_albums
+from spotify_service import add_album_by_link
+from spotify_service import download_and_rate_selected_album
+from spotify_service import get_artist_albums
 
 
 def add_album_menu(sp: spotipy.Spotify) -> None:

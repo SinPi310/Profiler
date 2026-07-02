@@ -1,5 +1,6 @@
 import csv
 import os
+from datetime import datetime
 
 import pandas as pd
 
@@ -38,6 +39,36 @@ def get_artist_album_list_path(artist_name: str) -> str:
     artist_name_formate = normalize_file_name(artist_name)
     os.makedirs(os.path.join("db", "artists_albums"), exist_ok=True)
     return os.path.join("db", "artists_albums", f"{artist_name_formate}_album_list.csv")
+
+
+def get_artists_csv_path() -> str:
+    os.makedirs("db", exist_ok=True)
+    return os.path.join("db", "artists.csv")
+
+
+def save_artist_if_missing(artist_name: str, artist_id: str = "") -> str:
+    path = get_artists_csv_path()
+    albums_cache_path = get_artist_album_list_path(artist_name)
+
+    new_artist = {
+        "artist_name": artist_name,
+        "artist_id": artist_id,
+        "albums_cache_path": albums_cache_path,
+        "created_at": datetime.now().strftime("%Y-%m-%d"),
+    }
+
+    if os.path.exists(path):
+        df = pd.read_csv(path)
+
+        if "artist_name" in df.columns and artist_name in df["artist_name"].astype(str).values:
+            return path
+
+        df = pd.concat([df, pd.DataFrame([new_artist])], ignore_index=True)
+    else:
+        df = pd.DataFrame([new_artist])
+
+    df.to_csv(path, index=False, encoding="utf-8-sig")
+    return path
 
 
 def save_artist_album_list(albums_list: list, artist_name: str) -> str:
