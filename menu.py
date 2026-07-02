@@ -24,19 +24,24 @@ def menu(sp: spotipy.Spotify) -> None:
 
         choice = input("Enter your choice (1-5): ")
 
+        action_completed = False
+
         if choice == '1':
-            add_album_menu(sp)
+            action_completed = add_album_menu(sp)
         elif choice == '2':
-            rerate_album_menu()
+            action_completed = rerate_album_menu()
         elif choice == '3':
-            analyze_ratings_menu()
+            action_completed = analyze_ratings_menu()
         elif choice == '4':
-            open_csv_menu()
+            action_completed = open_csv_menu()
         elif choice == '5':
             print("Exiting the program...")
             return
         else:
             print("Invalid choice. Please try again.")
+            continue
+
+        if not action_completed:
             continue
 
         back_to_menu = input("\nBack to main menu? (y/n): ").strip().lower()
@@ -56,7 +61,10 @@ def choose_artist() -> str | None:
         for index, artist in enumerate(artists, start=1):
             print(f"{index}. {artist['artist_name']}")
 
-        selected_artist = input("\nChoose artist number: ").strip()
+        selected_artist = input("\nChoose artist number (or b to go back): ").strip().lower()
+
+        if selected_artist == "b":
+            return None
 
         try:
             artist_index = int(selected_artist) - 1
@@ -83,7 +91,10 @@ def choose_downloaded_album(artist_name: str, action_label: str) -> dict | None:
         for index, album in enumerate(albums, start=1):
             print(f"{index}. {album['album_name']}")
 
-        selected_album = input("\nChoose album number: ").strip()
+        selected_album = input("\nChoose album number (or b to go back): ").strip().lower()
+
+        if selected_album == "b":
+            return None
 
         try:
             album_index = int(selected_album) - 1
@@ -98,97 +109,121 @@ def choose_downloaded_album(artist_name: str, action_label: str) -> dict | None:
         return albums[album_index]
 
 
-def add_album_menu(sp: spotipy.Spotify) -> None:
-    print("\nAdd album:")
-    print("1. Add by album link")
-    print("2. Search artist and albums")
+def add_album_menu(sp: spotipy.Spotify) -> bool:
+    while True:
+        print("\nAdd album:")
+        print("1. Add by album link")
+        print("2. Search artist and albums")
 
-    add_choice = input("Enter your choice (1-2): ").strip()
+        add_choice = input("Enter your choice (1-2, or b to go back): ").strip().lower()
 
-    if add_choice == '1':
-        add_album_by_link(sp)
-    elif add_choice == '2':
-        artist_name = input("Pass artist name: ").strip()
+        if add_choice == "b":
+            return False
+
+        if add_choice == '1':
+            add_album_by_link(sp)
+            return True
+
+        if add_choice != '2':
+            print("Invalid choice. Please try again.")
+            continue
+
+        while True:
+            artist_name = input("Pass artist name (or b to go back): ").strip()
+
+            if artist_name.lower() == "b":
+                break
+
+            if not artist_name:
+                print("Artist name cannot be empty.")
+                continue
+
+            albums_list = get_artist_albums(sp, artist_name)
+
+            if not albums_list:
+                print("No albums found.")
+                continue
+
+            while True:
+                print("\nAlbums:")
+                for index, album in enumerate(albums_list, start=1):
+                    print(f"{index}. {album['album_name']} [{album['release_date']}] ({album['total_tracks']} tracks)")
+
+                selected_album = input("\nChoose album number (or b to go back): ").strip().lower()
+
+                if selected_album == "b":
+                    break
+
+                try:
+                    selected_index = int(selected_album) - 1
+                except ValueError:
+                    print("Invalid album number.")
+                    continue
+
+                if selected_index < 0 or selected_index >= len(albums_list):
+                    print("Album number out of range.")
+                    continue
+
+                selected_album_data = albums_list[selected_index]
+                path = download_and_rate_selected_album(sp, selected_album_data, album_download)
+
+                if path:
+                    print(f"Thanks for rating! Your data has been saved to {path}")
+
+                return True
+
+
+def rerate_album_menu() -> bool:
+    while True:
+        artist_name = choose_artist()
 
         if not artist_name:
-            print("Artist name cannot be empty.")
-            return
+            return False
 
-        albums_list = get_artist_albums(sp, artist_name)
+        selected_album_data = choose_downloaded_album(artist_name, "rerate")
 
-        if not albums_list:
-            print("No albums found.")
-            return
+        if not selected_album_data:
+            continue
 
-        print("\nAlbums:")
-        for index, album in enumerate(albums_list, start=1):
-            print(f"{index}. {album['album_name']} [{album['release_date']}] ({album['total_tracks']} tracks)")
-
-        selected_album = input("\nChoose album number: ").strip()
-
-        try:
-            selected_index = int(selected_album) - 1
-        except ValueError:
-            print("Invalid album number.")
-            return
-
-        if selected_index < 0 or selected_index >= len(albums_list):
-            print("Album number out of range.")
-            return
-
-        selected_album_data = albums_list[selected_index]
-        path = download_and_rate_selected_album(sp, selected_album_data, album_download)
+        path = rerate_album_from_file(
+            selected_album_data["file_path"],
+            artist_name,
+            selected_album_data["album_name"],
+        )
 
         if path:
-            print(f"Thanks for rating! Your data has been saved to {path}")
-    else:
-        print("Invalid choice. Please try again.")
+            print(f"Album rerated and saved to {path}")
+
+        return True
 
 
-def rerate_album_menu() -> None:
-    artist_name = choose_artist()
+def analyze_ratings_menu() -> bool:
+    while True:
+        artist_name = choose_artist()
 
-    if not artist_name:
-        return
+        if not artist_name:
+            return False
 
-    selected_album_data = choose_downloaded_album(artist_name, "rerate")
+        selected_album_data = choose_downloaded_album(artist_name, "analyze")
 
-    if not selected_album_data:
-        return
+        if not selected_album_data:
+            continue
 
-    path = rerate_album_from_file(
-        selected_album_data["file_path"],
-        artist_name,
-        selected_album_data["album_name"],
-    )
-
-    if path:
-        print(f"Album rerated and saved to {path}")
+        analyze_ratings(selected_album_data["file_path"])
+        return True
 
 
-def analyze_ratings_menu() -> None:
-    artist_name = choose_artist()
+def open_csv_menu() -> bool:
+    while True:
+        artist_name = choose_artist()
 
-    if not artist_name:
-        return
+        if not artist_name:
+            return False
 
-    selected_album_data = choose_downloaded_album(artist_name, "analyze")
+        selected_album_data = choose_downloaded_album(artist_name, "open")
 
-    if not selected_album_data:
-        return
+        if not selected_album_data:
+            continue
 
-    analyze_ratings(selected_album_data["file_path"])
-
-
-def open_csv_menu() -> None:
-    artist_name = choose_artist()
-
-    if not artist_name:
-        return
-
-    selected_album_data = choose_downloaded_album(artist_name, "open")
-
-    if not selected_album_data:
-        return
-
-    open_csv_file(selected_album_data["file_path"])
+        open_csv_file(selected_album_data["file_path"])
+        return True
