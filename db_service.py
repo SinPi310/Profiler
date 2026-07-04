@@ -5,6 +5,19 @@ from rating import rate_tracks
 
 
 def should_continue_with_existing_album(album_name: str, artist_name: str) -> bool:
+    """ Sprawdza, czy użytkownik chce kontynuować z istniejącym albumem.
+
+    Args:
+        album_name (str): Nazwa albumu.
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        bool: True, jeśli użytkownik chce kontynuować z istniejącym albumem.            
+
+    Raises: 
+        None.
+"""
+
     if not album_csv_exists(album_name, artist_name):
         return True
 
@@ -14,6 +27,20 @@ def should_continue_with_existing_album(album_name: str, artist_name: str) -> bo
 
 
 def download_and_rate_selected_album(sp, album_data: dict, album_download) -> str | None:
+    """ Pobiera i ocenia wybrany album.
+
+    Args:
+        sp: Spotify client.
+        album_data (dict): Dane albumu.
+        album_download: Funkcja do pobrania albumu.
+
+    Returns:
+        str | None: Ścieżka do zapisanego pliku CSV lub None.
+
+    Raises:
+        None.
+"""
+
     album_name = album_data["album_name"]
     album_url = album_data["album_url"]
     artist_name = album_data["artist_name"]
@@ -33,6 +60,20 @@ def download_and_rate_selected_album(sp, album_data: dict, album_download) -> st
 
 
 def rerate_album_from_file(file_path: str, artist_name: str, album_name: str) -> str | None:
+    """ Ponownie ocenia album z pliku CSV.
+    
+    Args:
+        file_path (str): Ścieżka do pliku CSV.
+        artist_name (str): Nazwa artysty.
+        album_name (str): Nazwa albumu.
+
+    Returns:
+        str | None: Ścieżka do zapisanego pliku CSV lub None.
+
+    Raises:
+        None.
+"""
+
     try:
         track_list = load_album_tracks_from_csv(file_path)
         rated_album = rate_tracks(track_list, album_name)

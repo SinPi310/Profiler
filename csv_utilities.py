@@ -12,6 +12,18 @@ def normalize_file_name(name: str) -> str:
 
 
 def get_album_csv_path(album_name: str, artist_name: str) -> str:
+    """Funkcja zwraca ścieżkę do pliku CSV dla danego albumu i artysty.
+
+    Args:
+        album_name (str): Nazwa albumu.
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        str: Ścieżka do pliku CSV.
+
+    Raises:
+        None.
+"""
     artist_name_formate = normalize_file_name(artist_name)
     album_name_formate = normalize_file_name(album_name)
 
@@ -22,11 +34,38 @@ def get_album_csv_path(album_name: str, artist_name: str) -> str:
 
 
 def album_csv_exists(album_name: str, artist_name: str) -> bool:
+    """Funkcja sprawdza, czy plik CSV dla danego albumu i artysty istnieje.
+    
+    Args:
+        album_name (str): Nazwa albumu.
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        bool: True, jeśli plik istnieje, False w przeciwnym razie.
+
+    Raises:
+        None.
+"""
+
     path = get_album_csv_path(album_name, artist_name)
     return os.path.exists(path)
 
 
 def save_to_csv(tracks_list: list, album_name: str, artist_name: str) -> str:
+    """Funkcja zapisuje listę utworów do pliku CSV.
+    
+    Args:
+        tracks_list (list): Lista utworów.
+        album_name (str): Nazwa albumu.
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        str: Ścieżka do zapisanego pliku CSV.
+
+    Raises:
+        None.
+"""
+
     path = get_album_csv_path(album_name, artist_name)
 
     df = pd.DataFrame(tracks_list)
@@ -36,17 +75,50 @@ def save_to_csv(tracks_list: list, album_name: str, artist_name: str) -> str:
 
 
 def get_artist_album_list_path(artist_name: str) -> str:
+    """Funkcja zwraca ścieżkę do pliku CSV z listą albumów danego artysty.
+    
+    Args:
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        str: Ścieżka do pliku CSV.
+
+    Raises:
+        None.
+"""
     artist_name_formate = normalize_file_name(artist_name)
     os.makedirs(os.path.join("db", "artists_albums"), exist_ok=True)
     return os.path.join("db", "artists_albums", f"{artist_name_formate}_album_list.csv")
 
 
 def get_artists_csv_path() -> str:
+    """Funkcja zwraca ścieżkę do pliku CSV z listą artystów.
+    
+    Returns:
+        str: Ścieżka do pliku CSV.
+
+    Raises:
+        None.
+"""
+
     os.makedirs("db", exist_ok=True)
     return os.path.join("db", "artists.csv")
 
 
 def save_artist_if_missing(artist_name: str, artist_id: str = "") -> str:
+    """Funkcja zapisuje informacje o artyście do pliku CSV.
+    
+    Args:
+        artist_name (str): Nazwa artysty.
+        artist_id (str): ID artysty.
+
+    Returns:
+        str: Ścieżka do zapisanego pliku CSV.
+
+    Raises:
+        None.
+"""
+
     path = get_artists_csv_path()
     albums_cache_path = get_artist_album_list_path(artist_name)
 
@@ -72,6 +144,19 @@ def save_artist_if_missing(artist_name: str, artist_id: str = "") -> str:
 
 
 def save_artist_album_list(albums_list: list, artist_name: str) -> str:
+    """Funkcja zapisuje listę albumów danego artysty do pliku CSV.
+    
+    Args:
+        albums_list (list): Lista albumów.
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        str: Ścieżka do zapisanego pliku CSV.
+
+    Raises:
+        None.
+"""
+
     path = get_artist_album_list_path(artist_name)
     df = pd.DataFrame(albums_list)
     df.to_csv(path, index=False, encoding="utf-8-sig")
@@ -79,6 +164,18 @@ def save_artist_album_list(albums_list: list, artist_name: str) -> str:
 
 
 def load_artist_album_list(artist_name: str) -> list:
+    """Funkcja ładuje listę albumów danego artysty z pliku CSV.
+    
+    Args:
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        list: Lista albumów.
+
+    Raises:
+        None.
+"""
+
     path = get_artist_album_list_path(artist_name)
 
     if not os.path.exists(path):
@@ -89,6 +186,14 @@ def load_artist_album_list(artist_name: str) -> list:
 
 
 def load_artists() -> list:
+    """Funkcja ładuje listę artystów z pliku CSV.
+    
+    Returns:
+        list: Lista artystów.
+
+    Raises:
+        None.           
+"""
     path = get_artists_csv_path()
 
     if not os.path.exists(path):
@@ -99,6 +204,18 @@ def load_artists() -> list:
 
 
 def list_downloaded_albums_for_artist(artist_name: str) -> list:
+    """Funkcja zwraca listę zapisanych albumów danego artysty.  
+
+    Args:
+        artist_name (str): Nazwa artysty.
+
+    Returns:
+        list: Lista zapisanych albumów.
+
+    Raises:
+        None.
+"""
+
     artist_name_formate = normalize_file_name(artist_name)
     artist_directory = os.path.join("db", "albums", artist_name_formate)
 
@@ -120,6 +237,18 @@ def list_downloaded_albums_for_artist(artist_name: str) -> list:
 
 
 def load_album_tracks_from_csv(file_path: str) -> list:
+    """Funkcja ładuje listę utworów z pliku CSV.
+    
+    Args:
+        file_path (str): Ścieżka do pliku CSV.
+
+    Returns:
+        list: Lista utworów.
+
+    Raises:
+        None.
+"""
+
     with open(file_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         tracks = []
@@ -136,6 +265,18 @@ def load_album_tracks_from_csv(file_path: str) -> list:
 
 
 def open_csv_file(file_path: str) -> list:
+    """Funkcja otwiera plik CSV i wyświetla jego zawartość.
+
+    Args:
+        file_path (str): Ścieżka do pliku CSV.
+        
+    Returns:
+        None.
+
+    Raises:
+        None.
+"""
+
     with open(file_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
 

@@ -11,6 +11,18 @@ from spotify_service import album_download
 from spotify_service import get_artist_albums
 
 def menu(sp: spotipy.Spotify) -> None:
+    """ Glowne menu aplikacji.
+
+    Args:
+        sp (spotipy.Spotify): Obiekt Spotify do interakcji z API.
+
+    Returns:
+        None.
+
+    Raises:
+        None.
+"""
+
     while True:
         print("\n+---------------------------------------+")
         print("|         Spotify Album rater           |")
@@ -50,6 +62,17 @@ def menu(sp: spotipy.Spotify) -> None:
             return
 
 def choose_artist() -> str | None:
+    """ Funkcja do wyboru artysty z listy dostępnych artystów.
+    
+    Args:
+        None.
+    
+    Returns:
+        str | None: Nazwa wybranego artysty lub None, jeśli użytkownik zdecyduje się wrócić do poprzedniego menu.
+
+    Raises:
+        None.
+"""
     artists = load_artists()
 
     if not artists:
@@ -80,6 +103,18 @@ def choose_artist() -> str | None:
 
 
 def choose_downloaded_album(artist_name: str, action_label: str) -> dict | None:
+    """ Funkcja do wyboru pobranego albumu dla danego artysty. 
+    
+    Args:
+        artist_name (str): Nazwa artysty.
+        action_label (str): Funcje takie jak "rerate", "analyze", "open".
+    
+    Returns:    
+        dict | None: Słownik zawierający dane wybranego albumu lub None, jeśli użytkownik zdecyduje się wrócić do poprzedniego menu.
+
+    Raises:
+        None.
+"""
     albums = list_downloaded_albums_for_artist(artist_name)
 
     if not albums:
@@ -110,6 +145,18 @@ def choose_downloaded_album(artist_name: str, action_label: str) -> dict | None:
 
 
 def add_album_menu(sp: spotipy.Spotify) -> bool:
+    """ Menu do dodawania albumu.
+
+    Args:
+        sp (spotipy.Spotify): Obiekt Spotify do interakcji z API.   
+
+    Returns:
+        bool: True, jeśli album został dodany pomyślnie.
+
+    Raises:
+        None.
+""" 
+
     while True:
         print("\nAdd album:")
         print("1. Add by album link")
@@ -174,6 +221,18 @@ def add_album_menu(sp: spotipy.Spotify) -> bool:
 
 
 def rerate_album_menu() -> bool:
+    """ Menu do oceniania albumu.
+
+    Args:
+        None.
+
+    Returns:
+        bool: True, jeśli album został oceniony pomyślnie.              
+
+    Raises:
+        None.
+"""
+
     while True:
         artist_name = choose_artist()
 
@@ -198,6 +257,17 @@ def rerate_album_menu() -> bool:
 
 
 def analyze_ratings_menu() -> bool:
+    """ Menu do analizy ocen albumu.
+
+    Args:
+        None.
+        
+    Returns:
+        bool: True, jeśli analiza została zakończona pomyślnie.
+    
+    Raises:
+        None.
+"""
     while True:
         artist_name = choose_artist()
 
@@ -214,6 +284,17 @@ def analyze_ratings_menu() -> bool:
 
 
 def open_csv_menu() -> bool:
+    """ Menu do otwierania pliku CSV.
+
+    Args:
+        None.
+        
+    Returns:
+        bool: True, jeśli plik został otwarty pomyślnie.
+
+    Raises:
+        None.       
+"""
     while True:
         artist_name = choose_artist()
 

@@ -2,6 +2,19 @@ from datetime import datetime
 
 
 def rate_tracks(track_list: list, album_name: str) -> list:
+    """ Funkcja do oceniania utworów w albumie.
+    
+    Args:
+        track_list (list): Lista utworów w albumie.
+        album_name (str): Nazwa albumu.
+    
+    Returns:
+        list: Lista piosenek z albumu ocenionych.
+        
+    Raises:
+        None.
+"""
+
     print("\nHi, \npleace type rate, between 1 and 10, after the track name. \nPS. You can also type [ * ] for super ultra grate tracks")
     print("")
     print(album_name.upper())

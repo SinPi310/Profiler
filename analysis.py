@@ -5,6 +5,18 @@ import pandas as pd
 
 
 def analyze_ratings(file_path: str) -> None:
+    """ Analiza ocen albumu na podstawie pliku CSV. 
+    
+    Args:
+        file_path (str): Ścieżka do pliku CSV.
+    
+    Returns:
+        None. Generowanie wykresów.
+
+    Raises:
+        None.
+"""
+
     df = pd.read_csv(file_path)
 
     if df.empty:
@@ -71,8 +83,19 @@ def analyze_ratings(file_path: str) -> None:
     plt.tight_layout()
     plt.show()
 
-
 def format_ms(ms: int) -> str:
+    """ Konwertuje czas z milisekund na minut i sekund.
+     
+    Args:
+        ms (int): Czas w milisekundach.
+    
+    Returns:
+        str: Czas w formacie mm:ss.
+    
+    Raises:
+        None.
+"""
+
     minutes = int((ms / (1000 * 60)) % 60)
     seconds = int((ms / 1000) % 60)
     return f"{minutes:02d}:{seconds:02d}"

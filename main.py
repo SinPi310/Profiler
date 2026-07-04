@@ -22,12 +22,9 @@ def main():
 
         menu(sp)
 
-        # open(r"D:\WSEI 2 year\SEM4\Python\Profiler\DB\samurai champloo music record departure.csv")
-
     except Exception as e:
-        print(f"Wystąpił błąd: {e}")
+        print(f"Error: {e}")
 
-########### Przeczytać o tym w notatkach ###########
 if __name__ == "__main__":
     main()
-####################################################
+    
